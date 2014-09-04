@@ -1,13 +1,16 @@
 package com.humming.heqzha.phonecallrecorder;
 
 import android.app.IntentService;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.MediaRecorder;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.humming.heqzha.phonecallrecorder.library.AudioRecordHelper;
 import com.humming.heqzha.phonecallrecorder.library.DataBaseHelper;
@@ -27,6 +30,7 @@ import java.util.Calendar;
 public class PhoneCallService extends IntentService {
     // TODO: Rename actions, choose action names that describe tasks that this
     // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
+    private static final String ACTION_PHONE_CALL_LISTENER_SWITCH = "com.humming.heqzha.phonecallrecorder.action.phone.call.listener.init";
     private static final String ACTION_PHONE_STATE_CHANGED_IDLE = "com.humming.heqzha.phonecallrecorder.action.phone.state.changed.idle";
     private static final String ACTION_PHONE_STATE_CHANGED_OFFHOOK = "com.humming.heqzha.phonecallrecorder.action.phone.state.changed.offhook";
     private static final String ACTION_PHONE_STATE_CHANGED_RINGING = "com.humming.heqzha.phonecallrecorder.action.phone.state.changed.ringing";
@@ -78,6 +82,15 @@ public class PhoneCallService extends IntentService {
         super("PhoneCallService");
     }
 
+    public static void startActionPhoneCallListenerSwitch(Context context, String param1, String param2){
+        Log.d("PhoneCallService.startActionPhoneCallListenerSwitch", "Start");
+        Intent intent = new Intent(context, PhoneCallService.class);
+        intent.setAction(ACTION_PHONE_CALL_LISTENER_SWITCH);
+        intent.putExtra(EXTRA_PARAM1, param1);
+        intent.putExtra(EXTRA_PARAM2, param2);
+        context.startService(intent);
+        Log.d("PhoneCallService.startActionPhoneCallListenerSwitch", "End");
+    }
     /**
      * Starts this service to perform action phone state changed to idle with the given parameters. If
      * the service is already performing a task this action will be queued.
@@ -206,12 +219,14 @@ public class PhoneCallService extends IntentService {
             final String action = intent.getAction();
             final String param1 = intent.getStringExtra(EXTRA_PARAM1);
             final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-            if (ACTION_PHONE_STATE_CHANGED_IDLE.equals(action)) {
+            if (ACTION_PHONE_CALL_LISTENER_SWITCH.equals(action)){
+                handleActionPhoneCallListenerSwitch(param1,param2);
+            }else if(ACTION_PHONE_STATE_CHANGED_IDLE.equals(action)) {
                 handleActionPhoneStateChangedIdle(param1, param2);
             } else if (ACTION_PHONE_STATE_CHANGED_OFFHOOK.equals(action)) {
                 handleActionPhoneStateChangedOffhook(param1, param2);
             } else if (ACTION_PHONE_STATE_CHANGED_RINGING.equals(action)) {
-                handleActionPhoneStateChangedRinging(param1,param2);
+                handleActionPhoneStateChangedRinging(param1, param2);
             } else if (ACTION_RECORD_STATE_START.equals(action)){
                 handleActionRecordStart(param1, param2);
             } else if (ACTION_RECORD_STATE_END.equals(action)){
@@ -221,6 +236,27 @@ public class PhoneCallService extends IntentService {
         Log.d("PhoneCallService.onHandleIntent", "Done");
     }
 
+    private void handleActionPhoneCallListenerSwitch(String param1, String param2){
+        Log.d("PhoneCallService.handleActionPhoneStateChangedIdle", "Start");
+        if (RecorderApplication.G_PHONE_CALL_LISTENER_ON.equals(param1)){
+            //  Active Phone State Receiver
+            PackageManager pm  = this.getPackageManager();
+            ComponentName componentName = new ComponentName(this, PhoneStateReceiver.class);
+            pm.setComponentEnabledSetting(componentName,PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP);
+            Toast.makeText(getApplicationContext(), "Phone Call Recorder On", Toast.LENGTH_LONG).show();
+            Log.d("PhoneCallService.handleActionPhoneStateChangedIdle", "Phone Call Listener On");
+        }else {
+            //  Cancel Phone State Receiver
+            PackageManager pm  = this.getPackageManager();
+            ComponentName componentName = new ComponentName(this, PhoneStateReceiver.class);
+            pm.setComponentEnabledSetting(componentName,PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP);
+            Toast.makeText(getApplicationContext(), "Phone Call Recorder Off", Toast.LENGTH_LONG).show();
+            Log.d("PhoneCallService.handleActionPhoneStateChangedIdle", "Phone Call Listener Off");
+        }
+        Log.d("PhoneCallService.handleActionPhoneStateChangedIdle", "End");
+    }
     /**
      * Handle action phone state changed to idle in the provided background thread with
      * the provided parameters.

@@ -164,21 +164,13 @@ public class RecordMainActivity extends Activity
         mServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                //TODO Save the state in settings
                 if (isChecked){
-                    //  Active Phone State Receiver
-                    PackageManager pm  = RecordMainActivity.this.getPackageManager();
-                    ComponentName componentName = new ComponentName(RecordMainActivity.this, PhoneStateReceiver.class);
-                    pm.setComponentEnabledSetting(componentName,PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                            PackageManager.DONT_KILL_APP);
-                    Toast.makeText(getApplicationContext(), "activated", Toast.LENGTH_LONG).show();
-
+                    PhoneCallService.startActionPhoneCallListenerSwitch(RecordMainActivity.this,
+                            RecorderApplication.G_PHONE_CALL_LISTENER_ON,"");
                 }else {
-                    //  Cancel Phone State Receiver
-                    PackageManager pm  = RecordMainActivity.this.getPackageManager();
-                    ComponentName componentName = new ComponentName(RecordMainActivity.this, PhoneStateReceiver.class);
-                    pm.setComponentEnabledSetting(componentName,PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                            PackageManager.DONT_KILL_APP);
-                    Toast.makeText(getApplicationContext(), "cancelled", Toast.LENGTH_LONG).show();
+                    PhoneCallService.startActionPhoneCallListenerSwitch(RecordMainActivity.this,
+                            RecorderApplication.G_PHONE_CALL_LISTENER_OFF,"");
                 }
             }
         });
